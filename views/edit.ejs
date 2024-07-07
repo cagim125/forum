@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="main.css">
+  <title>Write</title>
+</head>
+
+<body>
+  <%- include('nav.ejs') %>
+  <form action="/add" method="POST" class="form-box">
+    <h4>수정하기</h4>
+    <input name="title" value="<%= result.title %>">
+    <input name="content" value="<%= result.content %>">
+    <button type="submit">전송</button>
+  </form>
+</body>
+
+</html>

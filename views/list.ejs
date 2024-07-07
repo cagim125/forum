@@ -10,18 +10,27 @@
 
 <body class="gray-bg">
   <%- include('nav.ejs') %>
-  <div class="white-bg">
-    <% for (var i = 0; i < 글목록.length; i++){ %>
-    <!-- <a href="/detail/<%= 글목록[i]._id %> ">1</a> -->
-    <div class="list-box">
-      <h4><%= 글목록[i].title %></h4>
-      <p><%= 글목록[i].content %></p>
+    <div class="white-bg">
+      <% for (var i=0; i < 글목록.length; i++){ %>
+
+        <div class="list-box">
+          <h4>
+            <a href="/detail/<%= 글목록[i]._id %> ">
+              <%= 글목록[i].title %>
+            </a>
+            <span>
+              <a href="/edit/<%= 글목록[i]._id %>">✏️</a>
+            </span>
+          </h4>
+          <p>
+            <%= 글목록[i].content %>
+          </p>
+        </div>
+
+        <% } %>
+
+
     </div>
-
-    <% } %>
-
-
-  </div>
 </body>
 
 </html>

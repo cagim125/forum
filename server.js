@@ -6,11 +6,7 @@ const { MongoClient, ObjectId } = require('mongodb');
 let db
 const url = "mongodb+srv://cagim30:!share2011!@cluster0.qzbj3dh.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
 
-app.set('view engine', 'ejs') 
-app.use(express.static(__dirname + '/public'))
 
-app.use(express.json())
-app.use(express.urlencoded({extended:true}))
 
 new MongoClient(url).connect().then((client)=>{
   console.log('DB연결성공')
@@ -23,6 +19,12 @@ new MongoClient(url).connect().then((client)=>{
   console.log(err)
 })
 
+app.set('view engine', 'ejs') 
+app.use(express.static(__dirname + '/public'))
+
+app.use(express.json())
+app.use(express.urlencoded({extended:true}))
+
 app.get('/detail/:id' , async (req, res) => {
   const id = req.params.id;
 
@@ -33,12 +35,31 @@ app.get('/detail/:id' , async (req, res) => {
     return res.status(400).send('Invalid ID format');
   }
 
-  let result = await db.collection('post').findOne({ _id : new ObjectId(id) })
-  console.log(result)
-  res.render('detail.ejs', { result : result })
-  
+  try {
+    let result = await db.collection('post').findOne({ _id : new ObjectId(id) })
+    if (result == null) {
+      res.status(400).send('그런 글 업슴')
+    }
+    res.render('detail.ejs', { result : result })
+  } catch (err) {
+    res.send('해당 아이템은 업서요')
+  }
 })
 
+app.get('/edit/:id', async (req, res) => {
+  const id = req.params.id
+
+  if(!ObjectId.isValid(id)) {
+    console.error(`Invalid ID Format ${id}`);
+    return res.status(400).send('Invalid ID format');
+  }
+  try {
+   let result = await db.collection('post').findOne({ _id : new ObjectId(id)})
+   res.render('edit.ejs', {result, result})
+  } catch (err) {
+    res.send('그런 아이템 업씀')
+  }
+})
 
 
 app.get('/', (요청, 응답) => {
