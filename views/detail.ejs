@@ -4,13 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="main.css">
-  <title>nav</title>
+  <title>Document</title>
 </head>
 <body>
-  <div class="nav">
-    <a class="logo">Appleforum</a>
-    <a href="/write">글작성</a>
-    <a>page2</a>
-  </div>
+  <%- include('nav.ejs') %>
+  <div class="detail-bg">
+    <h4><%= result.title %></h4>
+    <p><%= result.content %></p>
+</div> 
 </body>
 </html>

@@ -1,8 +1,16 @@
 const express = require('express')
 const app = express()
-const { MongoClient } = require('mongodb');
+
+const { MongoClient, ObjectId } = require('mongodb');
+
 let db
 const url = "mongodb+srv://cagim30:!share2011!@cluster0.qzbj3dh.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
+
+app.set('view engine', 'ejs') 
+app.use(express.static(__dirname + '/public'))
+
+app.use(express.json())
+app.use(express.urlencoded({extended:true}))
 
 new MongoClient(url).connect().then((client)=>{
   console.log('DB연결성공')
@@ -15,8 +23,21 @@ new MongoClient(url).connect().then((client)=>{
   console.log(err)
 })
 
-app.set('view engine', 'ejs') 
-app.use(express.static(__dirname + '/public'))
+app.get('/detail/:id' , async (req, res) => {
+  const id = req.params.id;
+
+  console.log(`Received ID : ${id}`);
+
+  if(!ObjectId.isValid(id)) {
+    console.error(`Invalid ID Format ${id}`);
+    return res.status(400).send('Invalid ID format');
+  }
+
+  let result = await db.collection('post').findOne({ _id : new ObjectId(id) })
+  console.log(result)
+  res.render('detail.ejs', { result : result })
+  
+})
 
 
 
@@ -28,6 +49,26 @@ app.get('/list', async (req, res) => {
   let result = await db.collection('post').find().toArray()
   res.render('list.ejs', { 글목록 : result})
 })
+app.get('/write', (req, res) => {
+  res.render('write.ejs')
+})
+
+app.post('/add', async (요청, 응답)=>{
+  console.log(요청.body)
+  if (요청.body.title == '') {
+    응답.send('제목안적었는데요.')
+  } else {
+    try{
+      await db.collection('post').insertOne({title : 요청.body.title, content : 요청.body.content})
+      응답.redirect('/list')
+    } catch (e) {
+      console.log(e)
+      응답.send('DB에러남')
+    }
+    
+  }
+})
+
 
 app.get('/time', (req, res) => {
   res.render('time.ejs', { data : new Date()})

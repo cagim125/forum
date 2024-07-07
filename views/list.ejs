@@ -4,15 +4,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="list.css">
+  <link rel="stylesheet" href="main.css">
   <title>List</title>
 </head>
 
-<body class="grey-bg">
+<body class="gray-bg">
   <%- include('nav.ejs') %>
   <div class="white-bg">
     <% for (var i = 0; i < 글목록.length; i++){ %>
-
+    <!-- <a href="/detail/<%= 글목록[i]._id %> ">1</a> -->
     <div class="list-box">
       <h4><%= 글목록[i].title %></h4>
       <p><%= 글목록[i].content %></p>
