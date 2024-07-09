@@ -37,10 +37,51 @@ app.use(passport.initialize())
 app.use(session({
   secret: 'P@ssW0rd123456',
   resave : false,
-  saveUninitialized : false
+  saveUninitialized : false,
+  cookie : { maxAge : 60 * 60 * 1000 }
 }))
 
 app.use(passport.session()) 
+
+passport.use(new LocalStrategy(async (username, password, cb) => {
+  let result = await db.collection('user').findOne({ username : username})
+  if(!result) {
+    return cb(null, false, {message : '아이디 DB에 없음'})
+  }
+  if (result.password == password) {
+    return cb(null, result)
+  } else {
+    return cb(null, false, { message : '비번불일치'})
+  }
+}))
+passport.serializeUser((user, done) => {
+  process.nextTick(() => {
+    done(null, { id: user._id, username: user.username })
+  })
+})
+passport.deserializeUser( async (user, done) => {
+  let result = await db.collection('user').findOne({_id : new ObjectId(user.id) })
+  delete result.password
+  process.nextTick(() => {
+    return done(null, result)
+  })
+})
+
+app.get('/login', (req, res) => {
+  res.render('login.ejs')
+})
+app.post('/login', (req, res, next) => {
+  
+  passport.authenticate('local', (error, user, info) => {
+    if (error) return res.status(500).json(error)
+    if (!user) return res.status(401).json(info.message)
+    req.logIn(user, (err) => {
+      if (err) return next(err)
+      res.redirect('/')
+    })
+  })(req, res, next)
+})
+
 
 app.get('/detail/:id', async (req, res) => {
   const id = req.params.id;
@@ -124,9 +165,6 @@ app.delete('/delete', async (req, res) => {
   }
 })
 
-app.get('/login', (req, res) => {
-  res.render('login.ejs')
-})
 
 
 
@@ -135,6 +173,7 @@ app.get('/', (요청, 응답) => {
 })
 
 app.get('/list', async (req, res) => {
+  console.log(req.user)
   let result = await db.collection('post').find().toArray()
   let totalPage = result.length
   res.render('list.ejs', { 글목록: result, totalPage : totalPage })
