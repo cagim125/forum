@@ -4,13 +4,15 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="/main.css">
-  <title>Document</title>
+  <title>Login</title>
 </head>
 <body>
   <%- include('nav.ejs') %>
-  <div class="detail-bg">
-    <h4><%= result.title %></h4>
-    <p><%= result.content %></p>
-</div> 
+  <form class="form-box" action="/login" method="POST">
+    <h4>로그인</h4>
+    <input name="username">
+    <input name="password" type="password">
+    <button type="submit">전송</button>
+</form> 
 </body>
 </html>

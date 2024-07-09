@@ -29,6 +29,19 @@ app.use(express.urlencoded({ extended: true }))
 
 app.use(methodOverride('_method'))
 
+const session = require('express-session')
+const passport = require('passport')
+const LocalStrategy = require('passport-local')
+
+app.use(passport.initialize())
+app.use(session({
+  secret: 'P@ssW0rd123456',
+  resave : false,
+  saveUninitialized : false
+}))
+
+app.use(passport.session()) 
+
 app.get('/detail/:id', async (req, res) => {
   const id = req.params.id;
 
@@ -111,15 +124,20 @@ app.delete('/delete', async (req, res) => {
   }
 })
 
+app.get('/login', (req, res) => {
+  res.render('login.ejs')
+})
+
 
 
 app.get('/', (요청, 응답) => {
-  응답.sendFile(__dirname + '/index.html')
+  응답.redirect('/list')
 })
 
 app.get('/list', async (req, res) => {
   let result = await db.collection('post').find().toArray()
-  res.render('list.ejs', { 글목록: result })
+  let totalPage = result.length
+  res.render('list.ejs', { 글목록: result, totalPage : totalPage })
 })
 app.get('/list/:id', async (req, res) => {
   let Page = await db.collection('post').find().toArray()
