@@ -2,8 +2,9 @@ const express = require('express')
 const app = express()
 
 const methodOverride = require('method-override')
-
 const { MongoClient, ObjectId } = require('mongodb');
+const bcrypt = require('bcrypt')
+const MongoStore = require('connect-mongo')
 
 let db
 const url = "mongodb+srv://cagim30:!share2011!@cluster0.qzbj3dh.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
@@ -38,7 +39,11 @@ app.use(session({
   secret: 'P@ssW0rd123456',
   resave : false,
   saveUninitialized : false,
-  cookie : { maxAge : 60 * 60 * 1000 }
+  cookie : { maxAge : 60 * 60 * 1000 },
+  store : MongoStore.create({
+    mongoUrl : url,
+    dbName : 'forum',
+  })
 }))
 
 app.use(passport.session()) 
@@ -48,7 +53,7 @@ passport.use(new LocalStrategy(async (username, password, cb) => {
   if(!result) {
     return cb(null, false, {message : '아이디 DB에 없음'})
   }
-  if (result.password == password) {
+  if (await bcrypt.compare(password, result.password)) {
     return cb(null, result)
   } else {
     return cb(null, false, { message : '비번불일치'})
@@ -67,6 +72,31 @@ passport.deserializeUser( async (user, done) => {
   })
 })
 
+app.get('/register', (req, res) => {
+  res.render('register.ejs')
+})
+app.post('/register', async (요청, 응답) => {
+  let user = await db.collection('user').findOne({ username : 요청.body.username})
+  if (user != null) {
+    return 응답.status(400).send('이미 사용 중이 아이디 입니다.')
+  }
+  if (요청.body.username == ''){
+    return 응답.status(400).send('공백으로 보내지 마셍')
+  }
+  if (요청.body.password == '') {
+    return 응답.status(400).send('공백으로 보내지 마셍')
+  }
+  console.log(요청.body.password)
+  if (요청.body.password.length < 8) {
+    return 응답.status(400).send('비밀번호는 6자 이상 입력해 주세요.')
+  }
+  let hash = await bcrypt.hash(요청.body.password, 10)
+  await db.collection('user').insertOne({
+    username : 요청.body.username,
+    password : hash
+  })
+  응답.redirect('/')
+})
 app.get('/login', (req, res) => {
   res.render('login.ejs')
 })
