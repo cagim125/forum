@@ -1,3 +1,5 @@
+require('dotenv').config()
+
 const express = require('express')
 const app = express()
 
@@ -15,7 +17,7 @@ new MongoClient(url).connect().then((client) => {
   console.log('DB연결성공')
   db = client.db('forum')
 
-  app.listen(8080, () => {
+  app.listen(process.env.PORT, () => {
     console.log('http;//localhost:8080 에서 서버 실행중')
   })
 }).catch((err) => {
