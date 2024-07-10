@@ -37,26 +37,26 @@ const LocalStrategy = require('passport-local')
 app.use(passport.initialize())
 app.use(session({
   secret: 'P@ssW0rd123456',
-  resave : false,
-  saveUninitialized : false,
-  cookie : { maxAge : 60 * 60 * 1000 },
-  store : MongoStore.create({
-    mongoUrl : url,
-    dbName : 'forum',
+  resave: false,
+  saveUninitialized: false,
+  cookie: { maxAge: 60 * 60 * 1000 },
+  store: MongoStore.create({
+    mongoUrl: url,
+    dbName: 'forum',
   })
 }))
 
-app.use(passport.session()) 
+app.use(passport.session())
 
 passport.use(new LocalStrategy(async (username, password, cb) => {
-  let result = await db.collection('user').findOne({ username : username})
-  if(!result) {
-    return cb(null, false, {message : '아이디 DB에 없음'})
+  let result = await db.collection('user').findOne({ username: username })
+  if (!result) {
+    return cb(null, false, { message: '아이디 DB에 없음' })
   }
   if (await bcrypt.compare(password, result.password)) {
     return cb(null, result)
   } else {
-    return cb(null, false, { message : '비번불일치'})
+    return cb(null, false, { message: '비번불일치' })
   }
 }))
 passport.serializeUser((user, done) => {
@@ -64,36 +64,50 @@ passport.serializeUser((user, done) => {
     done(null, { id: user._id, username: user.username })
   })
 })
-passport.deserializeUser( async (user, done) => {
-  let result = await db.collection('user').findOne({_id : new ObjectId(user.id) })
+passport.deserializeUser(async (user, done) => {
+  let result = await db.collection('user').findOne({ _id: new ObjectId(user.id) })
   delete result.password
   process.nextTick(() => {
     return done(null, result)
   })
 })
+function checkLogin(req, res, next) {
+  console.log("user " + req.user)
+  if (req.user) {
+    next()
+  } else {
+    res.send('로그인안했는데?')
+  }
+}
+
+app.use('/add', checkLogin)
+
+app.get('/test2', checkLogin, (req, res) => { })
+
+function validateID(req, res, next) {
+  if (req.body.usernmae == '' || req.body.password == '') {
+    res.send('아이디 또는 비밀번호가 비어 있음')
+  } else if (req.body.password.length < 8) {
+    return res.send('비밀번호는 8자 이상 입력해 주세요.')
+  } else {
+    next()
+  }
+}
+
 
 app.get('/register', (req, res) => {
   res.render('register.ejs')
 })
-app.post('/register', async (요청, 응답) => {
-  let user = await db.collection('user').findOne({ username : 요청.body.username})
+app.post('/register', validateID, async (요청, 응답) => {
+  let user = await db.collection('user').findOne({ username: 요청.body.username })
   if (user != null) {
-    return 응답.status(400).send('이미 사용 중이 아이디 입니다.')
+    return 응답.status(400).send('이미 사용 중인 아이디 입니다.')
   }
-  if (요청.body.username == ''){
-    return 응답.status(400).send('공백으로 보내지 마셍')
-  }
-  if (요청.body.password == '') {
-    return 응답.status(400).send('공백으로 보내지 마셍')
-  }
-  console.log(요청.body.password)
-  if (요청.body.password.length < 8) {
-    return 응답.status(400).send('비밀번호는 6자 이상 입력해 주세요.')
-  }
+
   let hash = await bcrypt.hash(요청.body.password, 10)
   await db.collection('user').insertOne({
-    username : 요청.body.username,
-    password : hash
+    username: 요청.body.username,
+    password: hash
   })
   응답.redirect('/')
 })
@@ -101,7 +115,7 @@ app.get('/login', (req, res) => {
   res.render('login.ejs')
 })
 app.post('/login', (req, res, next) => {
-  
+
   passport.authenticate('local', (error, user, info) => {
     if (error) return res.status(500).json(error)
     if (!user) return res.status(401).json(info.message)
@@ -111,7 +125,6 @@ app.post('/login', (req, res, next) => {
     })
   })(req, res, next)
 })
-
 
 app.get('/detail/:id', async (req, res) => {
   const id = req.params.id;
@@ -184,7 +197,7 @@ app.post('/add', async (요청, 응답) => {
 })
 app.delete('/delete', async (req, res) => {
   console.log(req.query.docid)
-  let result = await db.collection('post').deleteOne( { _id : new ObjectId(req.query.docid) })
+  let result = await db.collection('post').deleteOne({ _id: new ObjectId(req.query.docid) })
   console.log(result.deletedCount)
   if (result.deletedCount === 1) {
     console.log("문서가 성공적으로 삭제되었습니다.");
@@ -202,18 +215,23 @@ app.get('/', (요청, 응답) => {
   응답.redirect('/list')
 })
 
+app.use('/list', (req, res, next) => {
+  console.log(new Date())
+  next()
+})
+
 app.get('/list', async (req, res) => {
   console.log(req.user)
   let result = await db.collection('post').find().toArray()
   let totalPage = result.length
-  res.render('list.ejs', { 글목록: result, totalPage : totalPage })
+  res.render('list.ejs', { 글목록: result, totalPage: totalPage })
 })
 app.get('/list/:id', async (req, res) => {
   let Page = await db.collection('post').find().toArray()
   let totalPage = Page.length
   let result = await db.collection('post').find()
-  .skip( (req.params.id - 1) * 5).limit(5).toArray()
-  res.render('list.ejs', { 글목록: result, totalPage : totalPage })
+    .skip((req.params.id - 1) * 5).limit(5).toArray()
+  res.render('list.ejs', { 글목록: result, totalPage: totalPage })
 })
 
 
