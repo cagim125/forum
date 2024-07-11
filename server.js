@@ -1,30 +1,58 @@
 require('dotenv').config()
 
 const express = require('express')
+const path = require('path')
+const favicon = require('serve-favicon')
+const router = express.Router()
 const app = express()
 
+// 메소드 자동 변환
 const methodOverride = require('method-override')
-const { MongoClient, ObjectId } = require('mongodb');
+// 비밀번호 해쉬
 const bcrypt = require('bcrypt')
+// 몽고DB import
+const connectDB = require('./database')
+const { ObjectId } = require('mongodb')
 const MongoStore = require('connect-mongo')
 
+app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
+
+// S3 Image upload Start
+const { S3Client } = require('@aws-sdk/client-s3')
+const multer = require('multer')
+const multerS3 = require('multer-s3')
+const s3 = new S3Client({
+  region : 'ap-northeast-2',
+  credentials : {
+    accessKeyId : process.env.accessKeyId, 
+    secretAccessKey : process.env.secretAccessKey
+  }
+})
+const upload = multer({
+  storage: multerS3({
+    s3: s3,
+    bucket: 'my-web-bucket2024',
+    key: function (req, file, cb) {
+      cb(null, Math.floor(Math.random() * 1000).toString() + Date.now() + '.' + file.originalname.split('.').pop()) //업로드시 파일명 변경가능
+    }
+  })
+})
+// S3 Image upload End
+
+
 let db
-const url = "mongodb+srv://cagim30:!share2011!@cluster0.qzbj3dh.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
-
-
-
-new MongoClient(url).connect().then((client) => {
+connectDB.then((client) => {
   console.log('DB연결성공')
   db = client.db('forum')
-
   app.listen(process.env.PORT, () => {
-    console.log('http;//localhost:8080 에서 서버 실행중')
+    console.log( process.env.SERVER_URL + ':' + process.env.PORT + ' 에서 서버 실행중')
   })
 }).catch((err) => {
   console.log(err)
 })
 
 app.set('view engine', 'ejs')
+//정적 파일 import
 app.use(express.static(__dirname + '/public'))
 
 app.use(express.json())
@@ -43,7 +71,7 @@ app.use(session({
   saveUninitialized: false,
   cookie: { maxAge: 60 * 60 * 1000 },
   store: MongoStore.create({
-    mongoUrl: url,
+    mongoUrl: process.env.Mongo_url,
     dbName: 'forum',
   })
 }))
@@ -74,17 +102,48 @@ passport.deserializeUser(async (user, done) => {
   })
 })
 function checkLogin(req, res, next) {
-  console.log("user " + req.user)
+  // console.log("user " + req.user)
   if (req.user) {
     next()
   } else {
     res.send('로그인안했는데?')
   }
 }
+//router 
+app.use('/shop', checkLogin, require('./routes/shop'))
+app.use('/board/sub', checkLogin ,require('./routes/board'))
 
-app.use('/add', checkLogin)
 
-app.get('/test2', checkLogin, (req, res) => { })
+
+app.post('/add', (req, 응답) => {
+  upload.single('image')(요청, 응답, (err)=>{
+    if (err) return 응답.send('에러남')
+    // 이미지 업로드성공시 실행할 코드~~
+    // console.log(req.body)
+    if (req.body.title == '') {
+      응답.send('제목안적었는데요.')
+    } else {
+      try {
+         db.collection('post').insertOne(
+          { title: req.body.title, 
+            content: req.body.content,
+            image : req.file.location,
+            like: 0 })
+        응답.redirect('/list')
+      } catch (e) {
+        console.log(e)
+        응답.send('DB에러남')
+      }
+    }
+  })
+
+
+})
+
+
+app.get('/test2', checkLogin, (req, res) => { 
+  res.send('로그인 확인')
+})
 
 function validateID(req, res, next) {
   if (req.body.usernmae == '' || req.body.password == '') {
@@ -182,21 +241,7 @@ app.put('/edit', async (req, res) => {
     res.status(500).send(err)
   }
 })
-app.post('/add', async (요청, 응답) => {
-  console.log(요청.body)
-  if (요청.body.title == '') {
-    응답.send('제목안적었는데요.')
-  } else {
-    try {
-      await db.collection('post').insertOne({ title: 요청.body.title, content: 요청.body.content, like: 0 })
-      응답.redirect('/list')
-    } catch (e) {
-      console.log(e)
-      응답.send('DB에러남')
-    }
 
-  }
-})
 app.delete('/delete', async (req, res) => {
   console.log(req.query.docid)
   let result = await db.collection('post').deleteOne({ _id: new ObjectId(req.query.docid) })
@@ -217,13 +262,14 @@ app.get('/', (요청, 응답) => {
   응답.redirect('/list')
 })
 
+//middleware 설정
 app.use('/list', (req, res, next) => {
   console.log(new Date())
   next()
 })
 
 app.get('/list', async (req, res) => {
-  console.log(req.user)
+  // console.log(req.user)
   let result = await db.collection('post').find().toArray()
   let totalPage = result.length
   res.render('list.ejs', { 글목록: result, totalPage: totalPage })
@@ -235,8 +281,6 @@ app.get('/list/:id', async (req, res) => {
     .skip((req.params.id - 1) * 5).limit(5).toArray()
   res.render('list.ejs', { 글목록: result, totalPage: totalPage })
 })
-
-
 
 app.get('/write', (req, res) => {
   res.render('write.ejs')
