@@ -10,50 +10,59 @@
 
 <body class="gray-bg">
   <%- include('nav.ejs') %>
-    <div class="white-bg">
-      <% for (var i=0; i < 글목록.length; i++){ %>
+  <input class="search">
+  <button class="search-send">검색</button>
+  <div class="white-bg">
+    <% for (var i=0; i < 글목록.length; i++){ %>
 
-        <div class="list-box">
-          <h4>
-            <a href="/detail/<%= 글목록[i]._id %> ">
-              <%= 글목록[i].title %>
-            </a>
-            <a href="/edit/<%= 글목록[i]._id %>">✏️</a>
-            <span class="delete" data-id="<%= 글목록[i]._id %>">🗑️</span>
-          </h4>
-          <p>
-            <%= 글목록[i].content %>
-          </p>
-        </div>
-        <% } %>
-        <div style="display: flex; justify-content: center; ">
-          <% for(let i=1; i <= (totalPage / 5); i++) { %>
-              <span style="margin-right: 10px;"><a href="/list/<%= i %>"><%= i %></a></span>
-            <% } %>
-        </div>
+    <div class="list-box">
+      <h4>
+        <a href="/detail/<%= 글목록[i]._id %> ">
+          <%= 글목록[i].title %>
+        </a>
+        <a href="/edit/<%= 글목록[i]._id %>">✏️</a>
+        <span class="delete" data-id="<%= 글목록[i]._id %>">🗑️</span>
+      </h4>
+      <p>
+        <%= 글목록[i].content %>
+      </p>
     </div>
-    <script>
-      const del_btn = document.querySelectorAll('.delete');
-      for (let i = 0; i < del_btn.length; i++) {
-        del_btn[i].addEventListener('click', function (e) {
-          fetch('/delete?docid=' + e.target.dataset.id, {
+    <% } %>
+    <div style="display: flex; justify-content: center; ">
+      <% for(let i=1; i <= (totalPage / 5); i++) { %>
+      <span style="margin-right: 10px;"><a href="/list/<%= i %>"><%= i %></a></span>
+      <% } %>
+    </div>
+  </div>
+  <script>
+    const searchBtn = document.querySelector('.search-send');
+    const searchValue = document.querySelector('.search');
+    searchBtn.addEventListener('click', () => {
+      console.log('search button 누름');
+      console.log('검색어 : ' + searchValue.value);
+    })
+
+
+    const del_btn = document.querySelectorAll('.delete');
+    for (let i = 0; i < del_btn.length; i++) {
+      del_btn[i].addEventListener('click', function(e) {
+        fetch('/delete?docid=' + e.target.dataset.id, {
             method: 'DELETE'
           })
-            .then(res => res.text())
-            .then(res => {
-              console.log(res)
-              if (res == "success") {
-                alert("문서가 정상적으로 삭제 되었습니다.")
-                location.reload()
-              }
-              if (res == 'Notfound') {
-                alert("문서를 찾을 수 없거나 삭제되지 않았습니다.")
-              }
-            })
-        })
-      }
-
-    </script>
+          .then(res => res.text())
+          .then(res => {
+            console.log(res)
+            if (res == "success") {
+              alert("문서가 정상적으로 삭제 되었습니다.")
+              location.reload()
+            }
+            if (res == 'Notfound') {
+              alert("문서를 찾을 수 없거나 삭제되지 않았습니다.")
+            }
+          })
+      })
+    }
+  </script>
 </body>
 
 </html>
