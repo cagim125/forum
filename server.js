@@ -3,7 +3,6 @@ require('dotenv').config()
 const express = require('express')
 const path = require('path')
 const favicon = require('serve-favicon')
-const router = express.Router()
 const app = express()
 
 // 메소드 자동 변환
@@ -17,27 +16,6 @@ const MongoStore = require('connect-mongo')
 
 app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
 
-// S3 Image upload Start
-const { S3Client } = require('@aws-sdk/client-s3')
-const multer = require('multer')
-const multerS3 = require('multer-s3')
-const s3 = new S3Client({
-  region : 'ap-northeast-2',
-  credentials : {
-    accessKeyId : process.env.accessKeyId, 
-    secretAccessKey : process.env.secretAccessKey
-  }
-})
-const upload = multer({
-  storage: multerS3({
-    s3: s3,
-    bucket: 'my-web-bucket2024',
-    key: function (req, file, cb) {
-      cb(null, Math.floor(Math.random() * 1000).toString() + Date.now() + '.' + file.originalname.split('.').pop()) //업로드시 파일명 변경가능
-    }
-  })
-})
-// S3 Image upload End
 
 
 let db
@@ -45,12 +23,13 @@ connectDB.then((client) => {
   console.log('DB연결성공')
   db = client.db('forum')
   app.listen(process.env.PORT, () => {
-    console.log( process.env.SERVER_URL + ':' + process.env.PORT + ' 에서 서버 실행중')
+    console.log(process.env.SERVER_URL + ':' + process.env.PORT + ' 에서 서버 실행중')
   })
 }).catch((err) => {
   console.log(err)
 })
 
+// 템플릿 엔진
 app.set('view engine', 'ejs')
 //정적 파일 import
 app.use(express.static(__dirname + '/public'))
@@ -111,39 +90,13 @@ function checkLogin(req, res, next) {
 }
 //router 
 app.use('/shop', checkLogin, require('./routes/shop'))
-app.use('/board/sub', checkLogin ,require('./routes/board'))
+app.use('/board', require('./routes/board'))
+app.use('/post', require('./routes/post'))
 
 
 
-app.post('/add', (req, 응답) => {
-  upload.single('image')(요청, 응답, (err)=>{
-    if (err) return 응답.send('에러남')
-    // 이미지 업로드성공시 실행할 코드~~
-    // console.log(req.body)
-    if (req.body.title == '') {
-      응답.send('제목안적었는데요.')
-    } else {
-      try {
-         db.collection('post').insertOne(
-          { title: req.body.title, 
-            content: req.body.content,
-            image : req.file.location,
-            like: 0 })
-        응답.redirect('/list')
-      } catch (e) {
-        console.log(e)
-        응답.send('DB에러남')
-      }
-    }
-  })
 
 
-})
-
-
-app.get('/test2', checkLogin, (req, res) => { 
-  res.send('로그인 확인')
-})
 
 function validateID(req, res, next) {
   if (req.body.usernmae == '' || req.body.password == '') {
@@ -164,7 +117,6 @@ app.post('/register', validateID, async (요청, 응답) => {
   if (user != null) {
     return 응답.status(400).send('이미 사용 중인 아이디 입니다.')
   }
-
   let hash = await bcrypt.hash(요청.body.password, 10)
   await db.collection('user').insertOne({
     username: 요청.body.username,
@@ -172,11 +124,11 @@ app.post('/register', validateID, async (요청, 응답) => {
   })
   응답.redirect('/')
 })
+
 app.get('/login', (req, res) => {
   res.render('login.ejs')
 })
 app.post('/login', (req, res, next) => {
-
   passport.authenticate('local', (error, user, info) => {
     if (error) return res.status(500).json(error)
     if (!user) return res.status(401).json(info.message)
@@ -255,39 +207,61 @@ app.delete('/delete', async (req, res) => {
   }
 })
 
-
-
-
 app.get('/', (요청, 응답) => {
   응답.redirect('/list')
 })
 
-//middleware 설정
-app.use('/list', (req, res, next) => {
-  console.log(new Date())
-  next()
+app.get('/search', async (req, res) => {
+  let result = await db.collection('post')
+  .find({ $text : { $search : req.query.val }}  ).toArray()
+  console.log(result)
+  res.render('list.ejs', { 글목록: result })
 })
 
 app.get('/list', async (req, res) => {
-  // console.log(req.user)
   let result = await db.collection('post').find().toArray()
-  let totalPage = result.length
-  res.render('list.ejs', { 글목록: result, totalPage: totalPage })
+  res.render('list.ejs', { 글목록: result })
 })
-app.get('/list/:id', async (req, res) => {
-  let Page = await db.collection('post').find().toArray()
-  let totalPage = Page.length
-  let result = await db.collection('post').find()
-    .skip((req.params.id - 1) * 5).limit(5).toArray()
-  res.render('list.ejs', { 글목록: result, totalPage: totalPage })
+app.get('/list/next/:id', async (req, res) => {
+  try {
+    const id = req.params.id;
+    if (!ObjectId.isValid(id)) {
+      return res.status(400).send('Invalid ObjectId');
+    }
+    const objectId = new ObjectId(id); // ObjectId 생성자를 사용할 때 문자열을 전달
+    let result = await db.collection('post').find({ _id: { $gt: objectId } }).limit(5).toArray();
+    if (result == '') {
+      res.send('마지막 페이지 입니다.')
+    }
+    res.render('list.ejs', { 글목록: result });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Internal Server Error');
+  }
+})
+app.get('/list/prev/:id', async (req, res) => {
+  try {
+    const id = req.params.id;
+    if (!ObjectId.isValid(id)) {
+      return res.status(400).send('Invalid ObjectId');
+    }
+    const objectId = new ObjectId(id); // ObjectId 생성자를 사용할 때 문자열을 전달
+    let result = await db.collection('post').find({ _id: { $lt: objectId } }).sort({ _id: -1 }).limit(5).toArray();
+    if (result == '') {
+      result = await db.collection('post').find({ _id: objectId }).limit(5).toArray();
+    }
+    res.render('list.ejs', { 글목록: result });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Internal Server Error');
+  }
 })
 
-app.get('/write', (req, res) => {
-  res.render('write.ejs')
-})
-
-
-
+//middleware 설정
+// app.use('/list', (req, res, next) => {
+//   console.log(new Date())
+//   next()
+// })
 
 app.get('/time', (req, res) => {
   res.render('time.ejs', { data: new Date() })
@@ -295,15 +269,7 @@ app.get('/time', (req, res) => {
 
 app.get('/about', (요청, 응답) => {
   console.log(db.collection('post').findOne({ title: '어쩌구' }))
-
   응답.sendFile(__dirname + '/about.html')
 })
 
-app.get('/news', (요청, 응답) => {
-  db.collection('post').insertOne({ title: '어쩌구' })
-  응답.send('내일 비 안옴')
-})
 
-app.get('/shop', (요청, 응답) => {
-  응답.send('쇼핑페이지입니다~')
-})

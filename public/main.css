@@ -64,6 +64,18 @@ body {
   color: grey;
 }
 
+.listNum{
+  display: flex;
+  justify-content: center; 
+}
+.listNum > span > a {
+  text-decoration: none;
+  margin-right: 10px;
+  font-size: 22px;
+  font-weight: bold;
+  color: grey;
+}
+
 input,div {
   box-sizing: border-box;
 }

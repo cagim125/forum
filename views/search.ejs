@@ -5,7 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="/main.css">
-  <title>List</title>
+  <title>Search</title>
 </head>
 
 <body class="gray-bg">
@@ -28,17 +28,10 @@
       </p>
     </div>
     <% } %>
-    <!-- <div class="listNum">
-      <span>
-        <% if (글목록.length > 0 ) { %>  
-          <a href="/list/prev/<%= 글목록[0]._id %>">↩</a>
-          <a href="/list/next/<%= 글목록[글목록.length - 1]._id %>">↪</a>
-          <% } %>
-      </span>
-    </div>
-  </div> -->
+
   <script>
     const searchBtn = document.querySelector('.search-send');
+    
     searchBtn.addEventListener('click', () => {
       let searchValue = document.querySelector('.search').value;
       location.href = '/search?val=' + searchValue;
