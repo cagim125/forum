@@ -76,7 +76,7 @@ router.delete('/delete', async (req, res) => {
   }
   let result = await db.collection('post').deleteOne({ 
     _id: new ObjectId(req.query.docid),
-    // user : req.user._id
+    user : req.user._id
    })
   console.log(result.deletedCount)
   if (result.deletedCount === 1) {

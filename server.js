@@ -84,7 +84,7 @@ function checkLogin(req, res, next) {
   if (req.user) {
     next()
   } else {
-    res.send('로그인안했는데?')
+    res.redirect('/login')
   }
 }
 function validateID(req, res, next) {
@@ -105,8 +105,8 @@ app.use((req, res, next) => {
 
 //router 
 app.use('/shop', checkLogin, require('./routes/shop'))
-app.use('/board', checkLogin , require('./routes/board'))
-app.use('/post', checkLogin ,  require('./routes/post'))
+app.use('/board', checkLogin, require('./routes/board'))
+app.use('/post', checkLogin, require('./routes/post'))
 
 
 
@@ -119,7 +119,9 @@ app.post('/register', validateID, async (요청, 응답) => {
   if (user != null) {
     return 응답.status(400).send('이미 사용 중인 아이디 입니다.')
   }
+
   let hash = await bcrypt.hash(요청.body.password, 10)
+
   await db.collection('user').insertOne({
     username: 요청.body.username,
     password: hash
@@ -148,11 +150,17 @@ app.post('/login', (req, res, next) => {
 app.get('/', (요청, 응답) => {
   응답.redirect('/list')
 })
-app.get('/list' , async (req, res) => {
-  if( req.user != null) {
-     var user = req.user
+app.get('/list', async (req, res) => {
+  if (req.user != null) {
+    var user = req.user
   }
   let result = await db.collection('post').find().toArray()
+
+  console.log('글목록[i].user:', result);
+  console.log('user._id:', user._id);
+  // console.log('Equal:', String(result[i].user) === String(user._id));
+
+
   res.render('list.ejs', { 글목록: result, user: user })
 })
 
