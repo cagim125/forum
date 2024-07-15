@@ -9,10 +9,16 @@ body {
 
 .nav {
   display: flex;
-  padding: 15px;
+  justify-content: space-between;
+  padding: 16px 24px;
   align-items: center;
   background: white;
 }
+.navItem {
+  margin: 0 24px;
+  font-weight: 900;
+}
+
 .nav a {
   color: rgb(107, 97, 97);
   margin-right: 10px;
