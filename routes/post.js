@@ -32,13 +32,6 @@ const upload = multer({
 // S3 Image upload End
 
 
-
-// router.get('/list/:id', async (req, res) => {
-  // let result = await db.collection('post').find()
-  // .skip( (req.params.id -1) * 5).limit(5).toArray()
-  //   res.render('list.ejs', { 글목록: result })
-// })
-
 router.get('/write', (req, res) => {
   res.render('write.ejs')
 })
@@ -83,7 +76,7 @@ router.delete('/delete', async (req, res) => {
   }
   let result = await db.collection('post').deleteOne({ 
     _id: new ObjectId(req.query.docid),
-    user : req.user._id
+    // user : req.user._id
    })
   console.log(result.deletedCount)
   if (result.deletedCount === 1) {
@@ -123,12 +116,11 @@ router.get('/detail/:id', async (req, res) => {
 
 router.get('/edit/:id', async (req, res) => {
   const id = req.params.id
-  console.log(id)
+  const user = req.user
 
   if( req.user == null) {
     return res.status(403).send('로그인안함')
   }
-
   if (!ObjectId.isValid(id)) {
     console.error(`Invalid ID Format ${id}`);
     return res.status(400).send('Invalid ID format');
@@ -140,9 +132,32 @@ router.get('/edit/:id', async (req, res) => {
       // user : req.user._id  
       }
     )
-    res.render('edit.ejs', { result, result })
+    res.render('edit.ejs', { result : result, user : user })
   } catch (err) {
     res.send('그런 아이템 업씀')
+  }
+})
+
+router.put('/edit', async (req, res) => {
+  const id = req.body.id
+
+  if (req.body.title == '') {
+    res.status(400).send('제목 공백 입니다.')
+  }
+  if (req.body.content == '') {
+    res.status(400).send('내용 공백 입니다.')
+  }
+  if (!ObjectId.isValid(id)) {
+    console.error(`Invalid ID Format ${id}`);
+    return res.status(400).send('Invalid ID format');
+  }
+
+  try {
+    await db.collection('post').updateOne({ _id: new ObjectId(id) },
+      { $set: { title: req.body.title, content: req.body.content } })
+    res.redirect('/post/detail/' + id)
+  } catch (err) {
+    res.status(500).send(err)
   }
 })
 
