@@ -17,6 +17,11 @@
     
     <h4><%= result.title %></h4>
     <p><%= result.content %></p>
+    <% if(!result.username)  { %>
+      <h1> 작성자 : Anonymous </h1>
+    <% } else { %>
+      <h1> 작성자 : <%= result.username %></h1>
+    <% } %>
 </div> 
 </body>
 </html>
