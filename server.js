@@ -81,23 +81,12 @@ passport.deserializeUser(async (user, done) => {
   })
 })
 function checkLogin(req, res, next) {
-  // console.log("user " + req.user)
   if (req.user) {
     next()
   } else {
     res.send('로그인안했는데?')
   }
 }
-//router 
-app.use('/shop', checkLogin, require('./routes/shop'))
-app.use('/board', require('./routes/board'))
-app.use('/post', require('./routes/post'))
-
-
-
-
-
-
 function validateID(req, res, next) {
   if (req.body.usernmae == '' || req.body.password == '') {
     res.send('아이디 또는 비밀번호가 비어 있음')
@@ -108,7 +97,20 @@ function validateID(req, res, next) {
   }
 }
 
+app.use((req, res, next) => {
+  // `req.user`가 존재하면 `res.locals.user`에 설정
+  res.locals.user = req.user || null;
+  next();
+});
 
+//router 
+app.use('/shop', checkLogin, require('./routes/shop'))
+app.use('/board', checkLogin , require('./routes/board'))
+app.use('/post', checkLogin ,  require('./routes/post'))
+
+
+
+// 회원가입
 app.get('/register', (req, res) => {
   res.render('register.ejs')
 })
@@ -124,7 +126,9 @@ app.post('/register', validateID, async (요청, 응답) => {
   })
   응답.redirect('/')
 })
+// 회원가입 끝
 
+// 로그인
 app.get('/login', (req, res) => {
   res.render('login.ejs')
 })
@@ -138,42 +142,32 @@ app.post('/login', (req, res, next) => {
     })
   })(req, res, next)
 })
-
-
-
-app.put('/edit', async (req, res) => {
-  console.log(req.body.title)
-  if (req.body.title == '') {
-    res.status(400).send('제목 공백 입니다.')
-  }
-  if (req.body.content == '') {
-    res.status(400).send('내용 공백 입니다.')
-  }
-
-  try {
-    await db.collection('post').updateOne({ _id: new ObjectId(req.body.id) },
-      { $set: { title: req.body.title, content: req.body.content } })
-    res.redirect('/list')
-  } catch (err) {
-    res.status(500).send(err)
-  }
-})
-
+// 로그인 끝
 
 
 app.get('/', (요청, 응답) => {
   응답.redirect('/list')
 })
+app.get('/list' , async (req, res) => {
+  if( req.user != null) {
+     var user = req.user
+  }
+  let result = await db.collection('post').find().toArray()
+  res.render('list.ejs', { 글목록: result, user: user })
+})
+
 
 app.get('/search', async (req, res) => {
   let 검색조건 = [
-    {$search : {
-      index : 'title_index',
-      text : { query : req.query.val, path : 'title' }
-    }},
-    { $sort : { _id : 1} },
-    { $skip : 0},
-    { $limit : 3},
+    {
+      $search: {
+        index: 'title_index',
+        text: { query: req.query.val, path: 'title' }
+      }
+    },
+    { $sort: { _id: 1 } },
+    { $skip: 0 },
+    { $limit: 3 },
     // { $project : 0}
   ]
   let result = await db.collection('post').aggregate(검색조건).toArray()
@@ -183,44 +177,41 @@ app.get('/search', async (req, res) => {
   res.render('list.ejs', { 글목록: result })
 })
 
-app.get('/list', async (req, res) => {
-  let result = await db.collection('post').find().toArray()
-  res.render('list.ejs', { 글목록: result })
-})
-app.get('/list/next/:id', async (req, res) => {
-  try {
-    const id = req.params.id;
-    if (!ObjectId.isValid(id)) {
-      return res.status(400).send('Invalid ObjectId');
-    }
-    const objectId = new ObjectId(id); // ObjectId 생성자를 사용할 때 문자열을 전달
-    let result = await db.collection('post').find({ _id: { $gt: objectId } }).limit(5).toArray();
-    if (result == '') {
-      res.send('마지막 페이지 입니다.')
-    }
-    res.render('list.ejs', { 글목록: result });
-  } catch (err) {
-    console.error(err);
-    res.status(500).send('Internal Server Error');
-  }
-})
-app.get('/list/prev/:id', async (req, res) => {
-  try {
-    const id = req.params.id;
-    if (!ObjectId.isValid(id)) {
-      return res.status(400).send('Invalid ObjectId');
-    }
-    const objectId = new ObjectId(id); // ObjectId 생성자를 사용할 때 문자열을 전달
-    let result = await db.collection('post').find({ _id: { $lt: objectId } }).sort({ _id: -1 }).limit(5).toArray();
-    if (result == '') {
-      result = await db.collection('post').find({ _id: objectId }).limit(5).toArray();
-    }
-    res.render('list.ejs', { 글목록: result });
-  } catch (err) {
-    console.error(err);
-    res.status(500).send('Internal Server Error');
-  }
-})
+
+// app.get('/list/next/:id', async (req, res) => {
+//   try {
+//     const id = req.params.id;
+//     if (!ObjectId.isValid(id)) {
+//       return res.status(400).send('Invalid ObjectId');
+//     }
+//     const objectId = new ObjectId(id); // ObjectId 생성자를 사용할 때 문자열을 전달
+//     let result = await db.collection('post').find({ _id: { $gt: objectId } }).limit(5).toArray();
+//     if (result == '') {
+//       res.send('마지막 페이지 입니다.')
+//     }
+//     res.render('list.ejs', { 글목록: result });
+//   } catch (err) {
+//     console.error(err);
+//     res.status(500).send('Internal Server Error');
+//   }
+// })
+// app.get('/list/prev/:id', async (req, res) => {
+//   try {
+//     const id = req.params.id;
+//     if (!ObjectId.isValid(id)) {
+//       return res.status(400).send('Invalid ObjectId');
+//     }
+//     const objectId = new ObjectId(id); // ObjectId 생성자를 사용할 때 문자열을 전달
+//     let result = await db.collection('post').find({ _id: { $lt: objectId } }).sort({ _id: -1 }).limit(5).toArray();
+//     if (result == '') {
+//       result = await db.collection('post').find({ _id: objectId }).limit(5).toArray();
+//     }
+//     res.render('list.ejs', { 글목록: result });
+//   } catch (err) {
+//     console.error(err);
+//     res.status(500).send('Internal Server Error');
+//   }
+// })
 
 //middleware 설정
 // app.use('/list', (req, res, next) => {
