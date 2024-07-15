@@ -16,8 +16,13 @@
       <a href="/post/write">글작성</a>
     </div>
     <div class="navItem">
-      <a href="/login">로그인</a>
-      <a href="/cart">글작성</a>
+      <% if ( user == null) { %>
+        <a href="/login">로그인</a>
+        <a href="/cart">글작성</a>
+      <% } else { %>
+          <a href="#">마이페이지</a>
+          <a href="#">장바구니</a>
+      <% } %>
     </div>
 
   </div>
