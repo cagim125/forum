@@ -139,43 +139,8 @@ app.post('/login', (req, res, next) => {
   })(req, res, next)
 })
 
-app.get('/detail/:id', async (req, res) => {
-  const id = req.params.id;
 
-  console.log(`Received ID : ${id}`);
 
-  if (!ObjectId.isValid(id)) {
-    console.error(`Invalid ID Format ${id}`);
-    return res.status(400).send('Invalid ID format');
-  }
-
-  try {
-    let result = await db.collection('post').findOne({ _id: new ObjectId(id) })
-    if (result == null) {
-      res.status(400).send('그런 글 업슴')
-    }
-    res.render('detail.ejs', { result: result })
-  } catch (err) {
-    res.send('해당 아이템은 업서요')
-  }
-})
-
-app.get('/edit/:id', async (req, res) => {
-  const id = req.params.id
-
-  if (!ObjectId.isValid(id)) {
-    console.error(`Invalid ID Format ${id}`);
-    return res.status(400).send('Invalid ID format');
-  }
-  try {
-    let result = await db.collection('post').findOne({ _id: new ObjectId(id) })
-    console.log(JSON.stringify(result))
-
-    res.render('edit.ejs', { result, result })
-  } catch (err) {
-    res.send('그런 아이템 업씀')
-  }
-})
 app.put('/edit', async (req, res) => {
   console.log(req.body.title)
   if (req.body.title == '') {
@@ -194,26 +159,26 @@ app.put('/edit', async (req, res) => {
   }
 })
 
-app.delete('/delete', async (req, res) => {
-  console.log(req.query.docid)
-  let result = await db.collection('post').deleteOne({ _id: new ObjectId(req.query.docid) })
-  console.log(result.deletedCount)
-  if (result.deletedCount === 1) {
-    console.log("문서가 성공적으로 삭제되었습니다.");
-    return res.status(200).send('success')
-  } else {
-    console.log("문서를 찾을 수 없거나 삭제되지 않았습니다.");
-    return res.status(400).send('Notfound')
-  }
-})
+
 
 app.get('/', (요청, 응답) => {
   응답.redirect('/list')
 })
 
 app.get('/search', async (req, res) => {
-  let result = await db.collection('post')
-  .find({ $text : { $search : req.query.val }}  ).toArray()
+  let 검색조건 = [
+    {$search : {
+      index : 'title_index',
+      text : { query : req.query.val, path : 'title' }
+    }},
+    { $sort : { _id : 1} },
+    { $skip : 0},
+    { $limit : 3},
+    // { $project : 0}
+  ]
+  let result = await db.collection('post').aggregate(검색조건).toArray()
+  // let result = await db.collection('post')
+  // .find({ $text : { $search : req.query.val }}  ).toArray()
   console.log(result)
   res.render('list.ejs', { 글목록: result })
 })

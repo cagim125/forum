@@ -10,6 +10,7 @@ connectDB.then((client)=>{
 
 // S3 Image upload Start
 const { S3Client } = require('@aws-sdk/client-s3')
+const { ObjectId } = require('mongodb')
 const multer = require('multer')
 const multerS3 = require('multer-s3')
 const s3 = new S3Client({
@@ -42,6 +43,11 @@ router.get('/write', (req, res) => {
   res.render('write.ejs')
 })
 router.post('/add', (req, res) => {
+  console.log('글쓰기 시작')
+  console.log(req.user)
+  if (req.user == null) {
+    res.send('로그인 해주세요.')
+  }
   upload.single('image')(req, res, (err)=>{
     console.log(req.file)
     if (err) console.log(err)
@@ -52,10 +58,15 @@ router.post('/add', (req, res) => {
     } else {
       try {
          db.collection('post').insertOne(
-          { title: req.body.title, 
+          { 
+            title: req.body.title, 
             content: req.body.content,
             image : req.file.location,
-            like: 0 })
+            user : req.user._id,
+            username : req.user.username,
+            like: 0
+          }
+        )
             res.redirect('/list')
       } catch (e) {
         console.log(e)
@@ -65,6 +76,75 @@ router.post('/add', (req, res) => {
   })
 })
 
+router.delete('/delete', async (req, res) => {
+  console.log(req.query.docid)
+  if (req.user == null){
+    return res.status(403).send('로그인안함')
+  }
+  let result = await db.collection('post').deleteOne({ 
+    _id: new ObjectId(req.query.docid),
+    user : req.user._id
+   })
+  console.log(result.deletedCount)
+  if (result.deletedCount === 1) {
+    console.log("문서가 성공적으로 삭제되었습니다.");
+    return res.status(200).send('success')
+  } else {
+    console.log("문서를 찾을 수 없거나 삭제되지 않았습니다.");
+    return res.status(400).send('Notfound')
+  }
+})
+
+router.get('/detail/:id', async (req, res) => {
+  const id = req.params.id;
+
+  console.log(`Received ID : ${id}`);
+
+  if (!ObjectId.isValid(id)) {
+    console.error(`Invalid ID Format ${id}`);
+    return res.status(400).send('Invalid ID format');
+  }
+
+  try {
+    let result = await db.collection('post').findOne(
+      { 
+        _id: new ObjectId(id), 
+        // username : req.user._id
+      }
+    )
+    if (result == null) {
+      res.status(400).send('그런 글 업슴')
+    }
+    res.render('detail.ejs', { result: result })
+  } catch (err) {
+    res.send('해당 아이템은 업서요')
+  }
+})
+
+router.get('/edit/:id', async (req, res) => {
+  const id = req.params.id
+  console.log(id)
+
+  if( req.user == null) {
+    return res.status(403).send('로그인안함')
+  }
+
+  if (!ObjectId.isValid(id)) {
+    console.error(`Invalid ID Format ${id}`);
+    return res.status(400).send('Invalid ID format');
+  }
+  try {
+    let result = await db.collection('post').findOne(
+      { 
+      _id: new ObjectId(id),
+      // user : req.user._id  
+      }
+    )
+    res.render('edit.ejs', { result, result })
+  } catch (err) {
+    res.send('그런 아이템 업씀')
+  }
+})
 
 
 module.exports = router

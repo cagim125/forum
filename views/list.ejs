@@ -17,10 +17,11 @@
 
     <div class="list-box">
       <h4>
-        <a href="/detail/<%= 글목록[i]._id %> ">
+        <a href="/post/detail/<%= 글목록[i]._id %> ">
           <%= 글목록[i].title %>
         </a>
-        <a href="/edit/<%= 글목록[i]._id %>">✏️</a>
+        <a href="/post/edit/<%= 글목록[i]._id %>">✏️</a>
+        <!-- <span class="edit" data-id="<%= 글목록[i]._id %>">✏️</span> -->
         <span class="delete" data-id="<%= 글목록[i]._id %>">🗑️</span>
       </h4>
       <p>
@@ -37,34 +38,38 @@
       </span>
     </div>
   </div> -->
-  <script>
-    const searchBtn = document.querySelector('.search-send');
-    searchBtn.addEventListener('click', () => {
-      let searchValue = document.querySelector('.search').value;
-      location.href = '/search?val=' + searchValue;
-    })
-
-
-    const del_btn = document.querySelectorAll('.delete');
-    for (let i = 0; i < del_btn.length; i++) {
-      del_btn[i].addEventListener('click', function(e) {
-        fetch('/delete?docid=' + e.target.dataset.id, {
-            method: 'DELETE'
-          })
-          .then(res => res.text())
-          .then(res => {
-            console.log(res)
-            if (res == "success") {
-              alert("문서가 정상적으로 삭제 되었습니다.")
-              location.reload()
-            }
-            if (res == 'Notfound') {
-              alert("문서를 찾을 수 없거나 삭제되지 않았습니다.")
-            }
-          })
+    <script>
+      const searchBtn = document.querySelector('.search-send');
+      searchBtn.addEventListener('click', () => {
+        let searchValue = document.querySelector('.search').value;
+        location.href = '/search?val=' + searchValue;
       })
-    }
-  </script>
+
+
+      const del_btn = document.querySelectorAll('.delete');
+      for (let i = 0; i < del_btn.length; i++) {
+        del_btn[i].addEventListener('click', function(e) {
+          fetch('/post/delete?docid=' + e.target.dataset.id, {
+              method: 'DELETE'
+            })
+            .then(res => res.text())
+            .then(res => {
+              console.log(res)
+              if (res == '로그인안함') {
+                alert('로그인 먼저 해주세요.')
+                location.href = '/login'
+              }
+              if (res == "success") {
+                alert("문서가 정상적으로 삭제 되었습니다.")
+                location.reload()
+              }
+              if (res == 'Notfound') {
+                alert("문서를 찾을 수 없거나 작성자가 아닙니다.")
+              }
+            })
+        })
+      }
+    </script>
 </body>
 
 </html>
