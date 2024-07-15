@@ -1,17 +1,16 @@
 body {
   margin: 0;
-  
+  background-color: #eee;  
 }
-
-.gray-bg {
-  background-color: #eee;
+span { 
+  cursor: pointer;
 }
 
 .nav {
   display: flex;
   justify-content: space-between;
   padding: 16px 24px;
-  margin: 16px 0;
+  margin: 0 0 16px 0;
   align-items: center;
   background: white;
 }
