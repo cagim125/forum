@@ -9,7 +9,7 @@
 </head>
 
 <body class="gray-bg">
-  <%- include('nav.ejs') %>
+  <%- include('nav.ejs', { user : user}) %>
   <input class="search">
   <button class="search-send">검색</button>
   <div class="white-bg">
@@ -20,12 +20,12 @@
         <a href="/post/detail/<%= 글목록[i]._id %> ">
           <%= 글목록[i].title %>
         </a>
-        <a href="/post/edit/<%= 글목록[i]._id %>">✏️</a>
-        <!-- <span class="edit" data-id="<%= 글목록[i]._id %>">✏️</span> -->
-        <span class="delete" data-id="<%= 글목록[i]._id %>">🗑️</span>
       </h4>
       <p>
         <%= 글목록[i].content %>
+        <a href="/post/edit/<%= 글목록[i]._id %>">✏️</a>
+        <!-- <span class="edit" data-id="<%= 글목록[i]._id %>">✏️</span> -->
+        <span class="delete" data-id="<%= 글목록[i]._id %>">🗑️</span>
       </p>
     </div>
     <% } %>
