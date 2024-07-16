@@ -142,10 +142,6 @@ input,div {
   cursor: pointer;
 }
 .comment_btn:hover {
-  background-color: white;
-  color: black;
-}
-.comment_btn:focus {
-  background-color: white;
+  background-color: rgb(150, 35, 35);
   color: black;
 }
