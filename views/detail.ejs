@@ -34,8 +34,61 @@
             </h1>
             <% } %>
       </div>
-      
+      <div class="comment">
+        <div>
+          <input id="comment" type="text">
+          <button class="comment_btn" data-id="<%= result._id %>">작성</button>
+        </div>
+        <div class="commnetItem">
+          <% for (let i = 0; i < result2.length; i++) { %>
+            <p><strong><%= result2[i].writer %> : </strong> <%= result2[i].comment %></p>
+         <% } %> 
+        </div>
+      </div>
     </div>
+
+<script>
+  const comment = document.querySelector('#comment');
+  // comment.addEventListener('input', (e) => {
+  //   console.log(e.target.value)
+  // })
+  const comment_btn = document.querySelector('.comment_btn');
+  
+  comment_btn.addEventListener('click', (e) => {
+    let value = comment.value;
+    let parentId = e.target.dataset.id;
+    if( value == '') {
+      alert('값이 비어 있습니다.')
+    } else {
+      fetch('/comment', {
+      method : 'POST',
+      headers: {
+      'Content-Type': 'application/json' // Content-Type 헤더 추가
+    },
+      body : JSON.stringify({
+        comment : value,
+        parentId : parentId
+      })
+    })
+    .then((response) => response.json())
+    .then((result) => {
+      if(result.success) {
+        // 댓글이 성공적으로 저장되면 새로운 댓글을 HTML에 추가
+        let commentSection = document.querySelector('.commnetItem');
+        let newComment = document.createElement('p');
+        newComment.innerHTML =  `<strong>${result.writer} : </strong> ${result.comment}`;
+        commentSection.appendChild(newComment);
+
+        // 텍스트 영역 비우기
+        comment.value = ''
+      } else {
+        console.error(result.message)
+      }
+    })
+    }
+  })
+
+</script>
 </body>
 
 </html>

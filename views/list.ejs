@@ -24,9 +24,10 @@
           <p>
             <%= 글목록[i].content %>
               <a href="/post/edit/<%= 글목록[i]._id %>">✏️</a>
-              <!-- <span class="edit" data-id="<%= 글목록[i]._id %>">✏️</span> -->
-              <% if (String(글목록[i].user)  ==  String(user._id) ) {%>
+              <% if (  user &&  String(글목록[i].user) == String(user._id) ) { %>
                 <span class="delete" data-id="<%= 글목록[i]._id %>">🗑️</span>
+                <% } else { %>
+                  <span class="delete"></span>
                 <% } %>
           </p>
         </div>

@@ -90,8 +90,7 @@ router.delete('/delete', async (req, res) => {
 
 router.get('/detail/:id', async (req, res) => {
   const id = req.params.id;
-
-  console.log(`Received ID : ${id}`);
+  // console.log(`Received ID : ${id}`);
 
   if (!ObjectId.isValid(id)) {
     console.error(`Invalid ID Format ${id}`);
@@ -101,14 +100,20 @@ router.get('/detail/:id', async (req, res) => {
   try {
     let result = await db.collection('post').findOne(
       { 
-        _id: new ObjectId(id), 
-        // username : req.user._id
-      }
-    )
-    if (result == null) {
+        _id: new ObjectId(id)
+      })
+    let result2 = await db.collection('comments').find(
+      { 
+        parentId : new ObjectId(id)
+      }).toArray()
+
+    if (result == null){
       res.status(400).send('그런 글 업슴')
     }
-    res.render('detail.ejs', { result: result })
+    if (result2 == null){
+      res.render('detail.ejs', { result : result, result2 : null })
+    }
+    res.render('detail.ejs', { result: result, result2: result2 })
   } catch (err) {
     res.send('해당 아이템은 업서요')
   }

@@ -3,6 +3,8 @@ require('dotenv').config()
 const express = require('express')
 const path = require('path')
 const favicon = require('serve-favicon')
+const bodyParser = require('body-parser')
+
 const app = express()
 
 // 메소드 자동 변환
@@ -34,9 +36,6 @@ app.set('view engine', 'ejs')
 //정적 파일 import
 app.use(express.static(__dirname + '/public'))
 
-app.use(express.json())
-app.use(express.urlencoded({ extended: true }))
-
 app.use(methodOverride('_method'))
 
 const session = require('express-session')
@@ -48,7 +47,7 @@ app.use(session({
   secret: 'P@ssW0rd123456',
   resave: false,
   saveUninitialized: false,
-  cookie: { maxAge: 60 * 60 * 1000 },
+  cookie: { maxAge: 60 * 60 * 10000 },
   store: MongoStore.create({
     mongoUrl: process.env.Mongo_url,
     dbName: 'forum',
@@ -108,6 +107,32 @@ app.use('/shop', checkLogin, require('./routes/shop'))
 app.use('/board', checkLogin, require('./routes/board'))
 app.use('/post', checkLogin, require('./routes/post'))
 
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true })); // URL-encoded 데이터를 파싱
+
+// 코멘트
+app.post('/comment', async (req, res) => {
+  const { comment, parentId } = req.body
+  const { id, username} = req.user
+  
+  let result = await db.collection('comments')
+  .insertOne(
+    { 
+      comment : comment,
+      writerId : new ObjectId(id),
+      writer : username,
+      parentId : new ObjectId(parentId) 
+    }
+  )
+
+  if (result != null) {
+    return res.status(200).json({ success: true, writer: username, comment: comment });
+  } else {
+    return res.status(500).json({ success: false, message: 'Failed to save comment.' });
+  }
+})
+
+// 코멘트 끝
 
 
 // 회원가입
@@ -151,17 +176,17 @@ app.get('/', (요청, 응답) => {
   응답.redirect('/list')
 })
 app.get('/list', async (req, res) => {
-  if (req.user != null) {
-    var user = req.user
-  }
+  // if (req.user != null) {
+  //   var user = req.user
+  // }
   let result = await db.collection('post').find().toArray()
 
-  console.log('글목록[i].user:', result);
-  console.log('user._id:', user._id);
+  // console.log('글목록[i].user:', result);
+  // console.log('user._id:', user._id);
   // console.log('Equal:', String(result[i].user) === String(user._id));
 
 
-  res.render('list.ejs', { 글목록: result, user: user })
+  res.render('list.ejs', { 글목록: result })
 })
 
 
