@@ -108,10 +108,10 @@ router.get('/detail/:id', async (req, res) => {
       }).toArray()
 
     if (result == null){
-      res.status(400).send('그런 글 업슴')
+      return res.status(400).send('그런 글 업슴')
     }
     if (result2 == null){
-      res.render('detail.ejs', { result : result, result2 : null })
+      return res.render('detail.ejs', { result : result, result2 : null })
     }
     res.render('detail.ejs', { result: result, result2: result2 })
   } catch (err) {

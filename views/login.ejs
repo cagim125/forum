@@ -13,6 +13,15 @@
     <input name="username">
     <input name="password" type="password">
     <button type="submit">전송</button>
-</form> 
+</form>
+<button id="register">회원가입</button> 
+
+<script>
+  const register = document.getElementById('register');
+  register.addEventListener('click', () => {
+    location.href = '/register';
+  })
+
+</script>
 </body>
 </html>

@@ -17,6 +17,7 @@
           <% } else { %>
             <img src="<%= result.image %>" alt="product image" style="width: 300px; height: 300px;" />
             <% } %>
+        <button class="chat-btn" data-id="<%= result._id %>">채팅하기</button>
       </div>
       <div>
         <h2>
@@ -48,6 +49,31 @@
     </div>
 
 <script>
+  const chatBtn = document.querySelector('.chat-btn');
+
+  chatBtn.addEventListener('click', (e) => {
+    const writer = e.target.dataset.id;
+    console.log(writer);
+    fetch('/chat/request', {
+      method : 'POST',
+      headers : {
+        'Content-Type' : 'application/json'
+      },
+      body : JSON.stringify({
+        writer : writer
+      })
+    })
+    .then((res) => res.json())
+    .then((data) => {
+      if(data.success) {
+        window.location.href = '/chat/list';
+      } else {
+        console.log(data.message);
+      }
+    })
+  })
+
+
   const comment = document.querySelector('#comment');
   // comment.addEventListener('input', (e) => {
   //   console.log(e.target.value)

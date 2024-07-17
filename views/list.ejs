@@ -9,7 +9,7 @@
 </head>
 
 <body class="gray-bg">
-  <%- include('nav.ejs', { user : user}) %>
+  <%- include('nav.ejs') %>
     <input class="search">
     <button class="search-send">검색</button>
     <div class="white-bg">
@@ -24,56 +24,56 @@
           <p>
             <%= 글목록[i].content %>
               <a href="/post/edit/<%= 글목록[i]._id %>">✏️</a>
-              <% if (  user &&  String(글목록[i].user) == String(user._id) ) { %>
+              <% if ( user && String(글목록[i].user)==String(user._id) ) { %>
                 <span class="delete" data-id="<%= 글목록[i]._id %>">🗑️</span>
                 <% } else { %>
                   <span class="delete"></span>
-                <% } %>
+                  <% } %>
           </p>
         </div>
         <% } %>
           <!-- <div class="listNum">
-      <span>
-        <% if (글목록.length > 0 ) { %>  
-          <a href="/list/prev/<%= 글목록[0]._id %>">↩</a>
-          <a href="/list/next/<%= 글목록[글목록.length - 1]._id %>">↪</a>
-          <% } %>
-      </span>
+            <span>
+              <% if (글목록.length> 0 ) { %>
+                <a href="/list/prev/<%= 글목록[0]._id %>">↩</a>
+                <a href="/list/next/<%= 글목록[글목록.length - 1]._id %>">↪</a>
+                <% } %>
+            </span>
+          </div> -->
     </div>
-  </div> -->
-          <script>
+    <script>
 
-            const searchBtn = document.querySelector('.search-send');
-            searchBtn.addEventListener('click', () => {
-              let searchValue = document.querySelector('.search').value;
-              location.href = '/search?val=' + searchValue;
+      const searchBtn = document.querySelector('.search-send');
+      searchBtn.addEventListener('click', () => {
+        let searchValue = document.querySelector('.search').value;
+        location.href = '/search?val=' + searchValue;
+      })
+
+
+      const del_btn = document.querySelectorAll('.delete');
+      for (let i = 0; i < del_btn.length; i++) {
+        del_btn[i].addEventListener('click', function (e) {
+          fetch('/post/delete?docid=' + e.target.dataset.id, {
+            method: 'DELETE'
+          })
+            .then(res => res.text())
+            .then(res => {
+              console.log(res)
+              if (res == '로그인안함') {
+                alert('로그인 먼저 해주세요.')
+                location.href = '/login'
+              }
+              if (res == "success") {
+                alert("문서가 정상적으로 삭제 되었습니다.")
+                location.reload()
+              }
+              if (res == 'Notfound') {
+                alert("문서를 찾을 수 없거나 작성자가 아닙니다.")
+              }
             })
-
-
-            const del_btn = document.querySelectorAll('.delete');
-            for (let i = 0; i < del_btn.length; i++) {
-              del_btn[i].addEventListener('click', function (e) {
-                fetch('/post/delete?docid=' + e.target.dataset.id, {
-                  method: 'DELETE'
-                })
-                  .then(res => res.text())
-                  .then(res => {
-                    console.log(res)
-                    if (res == '로그인안함') {
-                      alert('로그인 먼저 해주세요.')
-                      location.href = '/login'
-                    }
-                    if (res == "success") {
-                      alert("문서가 정상적으로 삭제 되었습니다.")
-                      location.reload()
-                    }
-                    if (res == 'Notfound') {
-                      alert("문서를 찾을 수 없거나 작성자가 아닙니다.")
-                    }
-                  })
-              })
-            }
-          </script>
+        })
+      }
+    </script>
 </body>
 
 </html>
