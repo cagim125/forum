@@ -7,6 +7,11 @@ const bodyParser = require('body-parser')
 
 const app = express()
 
+const { createServer } = require('http')
+const { Server } = require('socket.io')
+const server = createServer(app)
+const io = new Server(server)
+
 // 메소드 자동 변환
 const methodOverride = require('method-override')
 // 비밀번호 해쉬
@@ -19,12 +24,11 @@ const MongoStore = require('connect-mongo')
 app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
 
 
-
 let db
 connectDB.then((client) => {
   console.log('DB연결성공')
   db = client.db('forum')
-  app.listen(process.env.PORT, () => {
+  server.listen(process.env.PORT, () => {
     console.log(process.env.SERVER_URL + ':' + process.env.PORT + ' 에서 서버 실행중')
   })
 }).catch((err) => {
@@ -41,6 +45,16 @@ app.use(methodOverride('_method'))
 const session = require('express-session')
 const passport = require('passport')
 const LocalStrategy = require('passport-local')
+
+const sessionMiddleware = session({
+  secret: "changeit",
+  resave: true,
+  saveUninitialized: true,
+});
+
+app.use(sessionMiddleware);
+
+io.engine.use(sessionMiddleware);
 
 app.use(passport.initialize())
 app.use(session({
@@ -110,20 +124,108 @@ app.use('/post', checkLogin, require('./routes/post'))
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true })); // URL-encoded 데이터를 파싱
 
+
+
+
+// 웹소켓
+io.on('connection', (socket) => {
+
+  socket.on('ask-join', async (data) => {
+    socket.join(data)
+  })
+
+  socket.on('message-send', async (data) => {
+    await db.collection('chatMessage').insertOne({
+      parentRoom: new ObjectId(data.room),
+      content: data.msg,
+      who: new ObjectId(socket.request.session.passport.user.id),
+      date: new Date()
+    })
+    console.log('유저가 보낸거 : ', data)
+
+    io.to(data.room).emit('message-broadcast', data)
+  })
+})
+// 웹소켓 끝
+
+// 채팅 
+app.get('/chat/detail/:id', async (req, res) => {
+
+  if (!req.user) {
+    return res.redirect('/login')
+  }
+  try {
+    let result = await db.collection('chatroom').findOne({ member : new ObjectId(req.params.id) })
+    let result2 = await db.collection('chatMessage')
+      .find({ parentRoom: new ObjectId(req.params.id) }).toArray()
+
+    // null 체크 및 기본값 설정
+    const messages = result2 || [];
+
+
+    res.render('chatDetail.ejs', { result: result, messages })
+  } catch (err) {
+    console.log(err)
+    res.status(404).send('해당 채팅방이 없어요.')
+  }
+})
+app.get('/chat/list', (_, res) => {
+  res.render('chatList.ejs')
+})
+
+app.get('/chatroom/list', async (req, res) => {
+  try {
+    let chatrooms = await db.collection('chatroom').find({
+      member: req.user._id
+    }).toArray();
+
+    res.status(200).json({ success: true, chatrooms })
+
+  } catch (err) {
+    console.log(err)
+    res.status(500).json({ success: false, message: 'Internal Server Error' })
+  }
+})
+
+app.post('/chat/request', async (req, res) => {
+  const { writer } = req.body
+  const { _id, username } = req.user
+
+  try {
+
+    let result = await db.collection('chatroom').insertOne({
+      member: [_id, new ObjectId(writer)],
+      date: new Date()
+    })
+
+    if (result.acknowledged) {
+      return res.status(200).json({ success: true })
+    } else {
+      return res.status(500).json({ success: false, message: 'Internal Server Error' })
+    }
+
+  } catch (err) {
+    console.log(err)
+  }
+})
+
+//채팅 끝
+
+
 // 코멘트
 app.post('/comment', async (req, res) => {
   const { comment, parentId } = req.body
-  const { id, username} = req.user
-  
+  const { id, username } = req.user
+
   let result = await db.collection('comments')
-  .insertOne(
-    { 
-      comment : comment,
-      writerId : new ObjectId(id),
-      writer : username,
-      parentId : new ObjectId(parentId) 
-    }
-  )
+    .insertOne(
+      {
+        comment: comment,
+        writerId: new ObjectId(id),
+        writer: username,
+        parentId: new ObjectId(parentId)
+      }
+    )
 
   if (result != null) {
     return res.status(200).json({ success: true, writer: username, comment: comment });
@@ -131,7 +233,6 @@ app.post('/comment', async (req, res) => {
     return res.status(500).json({ success: false, message: 'Failed to save comment.' });
   }
 })
-
 // 코멘트 끝
 
 

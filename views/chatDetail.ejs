@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="/main.css">
+  <title>채팅</title>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+
+<body>
+  <%- include('nav.ejs') %>
+    <div class="detail-bg">
+      <div class="chat-screen">
+        <% if (messages.length > 0) {%>
+          <% messages.forEach(message => { %> 
+            <% if (String(result.member[0]) == String(message.who)) {%>
+              <div class="chat-box mine"><span><%= message.content %></span></div>
+            <% } else { %>            
+              <div class="chat-box"><span><%= message.content %></span></div>
+            <% } %>
+          <% }) %>
+        <% } else { %>
+          <div class="chat-box"><span>No messages available.</span></div>
+        <% } %>
+        
+      </div>
+    </div>
+    <div class="chat-form">
+      <input class="chat-input">
+      <button class="chat-button">전송</button>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/socket.io@4.7.2/client-dist/socket.io.min.js"></script>
+    <script>
+      const socket = io();
+      socket.emit('ask-join', '<%= result.member[1] %>');
+      
+
+      $('.chat-button').on('click', () => {
+        let result = $('.chat-input').val();
+        socket.emit('message-send', { room: '<%= result.member[1] %>', people : '<%= result.member[0] %>' ,msg: result });
+
+        $('.chat-input').val('');
+      });
+
+
+      socket.on('message-broadcast', (data) => {
+        const people = data.people;
+        const who = '<%= result.member[0] %>';
+        
+        if (people == who) {
+          $('.chat-screen').append(`<div class="chat-box mine"><span>${data.msg}</span></div>`);
+        } else {
+          $('.chat-screen').append(`<div class="chat-box"><span>${data.msg}</span></div>`);
+        }
+
+      });
+
+    </script>
+</body>
+
+</html>

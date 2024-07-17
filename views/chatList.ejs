@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>채팅리스트</title>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+
+<body>
+  <%- include('nav.ejs') %>
+    <div class="white-bg">
+
+    </div>
+
+
+    <script>
+      $(document).ready(function () {
+        $.ajax({
+          url: '/chatroom/list',
+          method: 'GET',
+          success: function (response) {
+            if (response.success) {
+              const chatrooms = response.chatrooms;
+              console.log(chatrooms);
+              let chatroomListHtml = '';
+
+              // 채팅방 목록을 HTML로 변환
+              chatrooms.forEach((chatroom, index) => {
+                chatroomListHtml += `
+                <div class="list-box">
+                  <h4>
+                    <a href="/chat/detail/${chatroom.member[1]}">
+                    채팅방 ${index + 1} 
+                    </a>
+                  </h4>
+                  <p>채팅방설명~~</p>
+                </div>
+                  `
+              });
+              // 채팅방 목록을 DOM에 삽입
+              $('.white-bg').html(chatroomListHtml);
+            } else {
+              console.log('Failed to fetch chatrooms', response.message);
+            }
+          },
+          error: function (error) {
+            console.log("Error", error);
+          }
+        })
+      })
+    </script>
+</body>
+
+</html>
